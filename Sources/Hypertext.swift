@@ -6,18 +6,23 @@
 //  Copyright © 2016 Sahand Nayebaziz. All rights reserved.
 //
 
-public protocol Renderable {
-    func render() -> String
-    func render(startingWithSpacesCount: Int) -> String
+public protocol Renderable: CustomStringConvertible {
+    func render(indent: Int?, startingWithSpacesCount: Int) -> String
+}
+
+public extension Renderable {
+    var description: String {
+        return render()
+    }
+
+    func render(indent: Int? = nil) -> String {
+        return render(indent: indent, startingWithSpacesCount: 0)
+    }
 }
 
 extension CustomStringConvertible {
-    public func render() -> String {
-        return String(describing: self)
-    }
-
-    public func render(startingWithSpacesCount: Int) -> String {
-        return String(repeating: " ", count: startingWithSpacesCount) + render()
+    public func render(indent: Int?, startingWithSpacesCount: Int) -> String {
+        return String(repeating: " ", count: indent == nil ? 0 : startingWithSpacesCount) + String(describing: self)
     }
 }
 
@@ -27,23 +32,16 @@ extension Double: Renderable {}
 extension Float: Renderable {}
 
 extension Array: Renderable {
-    public func render() -> String {
+    public func render(indent: Int?, startingWithSpacesCount: Int) -> String {
         return self.reduce("") { renderedSoFar, item in
             guard let renderableItem = item as? Renderable else {
                 print("Tried to render an item in an array that does not conform to Renderable.")
                 return renderedSoFar
             }
-            return renderedSoFar + renderableItem.render()
-        }
-    }
 
-    public func render(startingWithSpacesCount: Int) -> String {
-        return self.reduce("") { renderedSoFar, item in
-            guard let renderableItem = item as? Renderable else {
-                print("Tried to render an item in an array that does not conform to Renderable.")
-                return renderedSoFar
-            }
-            return renderedSoFar + (renderedSoFar != "" ? "\n" : "") + renderableItem.render(startingWithSpacesCount: startingWithSpacesCount)
+            return renderedSoFar +
+                (indent == nil || renderedSoFar == "" ? "" : "\n") +
+                renderableItem.render(indent: indent, startingWithSpacesCount: startingWithSpacesCount)
         }
     }
 }
@@ -72,32 +70,30 @@ open class tag: Renderable {
         self.attributes = attributes
     }
 
-    public func render() -> String {
-        guard let name = name else {
-            fatalError("You must give a tag a name in your initializer. Take a look at the readme for an example showing how to create a custom tag.")
-        }
-
-        if isSelfClosing {
-            return "<\(name)\(renderAttributes())/>"
-        } else {
-            return "<\(name)\(renderAttributes())>\(children?.render() ?? "")</\(name)>"
-        }
-    }
-
-    public func render(startingWithSpacesCount: Int) -> String {
+    public func render(indent: Int?, startingWithSpacesCount: Int) -> String {
         guard let name = name else {
             fatalError("You must give a tag a name in your initializer. Take a look at the readme for an example showing how to create a custom tag.")
         }
 
         let leadingSpaces = String(repeating: " ", count: startingWithSpacesCount)
+
         if isSelfClosing {
             return "\(leadingSpaces)<\(name)\(renderAttributes())/>"
-        } else {
-            guard let children = children else {
-                return "\(leadingSpaces)<\(name)\(renderAttributes())></\(name)>"
-            }
-            return "\(leadingSpaces)<\(name)\(renderAttributes())>\("\n\(children.render(startingWithSpacesCount: startingWithSpacesCount + 2))\n")\(leadingSpaces)</\(name)>"
         }
+
+        guard let children = children else {
+            return "\(leadingSpaces)<\(name)\(renderAttributes())></\(name)>"
+        }
+
+        guard let indent = indent else {
+            return "<\(name)\(renderAttributes())>\(children.render())</\(name)>"
+        }
+
+        return [
+            leadingSpaces, "<", name, renderAttributes(), ">\n",
+            children.render(indent: indent, startingWithSpacesCount: startingWithSpacesCount + indent), "\n",
+            leadingSpaces, "</", name, ">"
+        ].joined()
     }
 
     private func renderAttributes() -> String {
