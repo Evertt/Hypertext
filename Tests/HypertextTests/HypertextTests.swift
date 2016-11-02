@@ -94,32 +94,54 @@ class HypertextTests: XCTestCase {
       XCTAssertEqual(expected, actual)
   }
 
-  func testCanRenderAttributesOnTag() {
-      let expected = "<link rel=\"stylesheet\" type=\"text/css\" href=\"./style.css\"/>"
-      let actual = link(attributes: ["rel": "stylesheet", "type":"text/css", "href":"./style.css"]).render()
+  func testCanRenderAttributeOnTag() {
+      let expected = "<link href=\"./style.css\"/>"
+      let actual = link(attributes: ["href":"./style.css"]).render()
 
       XCTAssertEqual(expected, actual)
   }
 
-  func testCanRenderAttributesOnNestedTag() {
-      let expected = "<head><link rel=\"stylesheet\" type=\"text/css\" href=\"./style.css\"/></head>"
-      let actual = head { link(attributes: ["rel": "stylesheet", "type":"text/css", "href":"./style.css"]) }.render()
-
+  func testCanRenderAttributeOnNestedTag() {
+      let expected = "<head><link href=\"./style.css\"/></head>"
+      let actual = head { link(attributes: ["href":"./style.css"]) }.render()
+    
       XCTAssertEqual(expected, actual)
   }
 
   func testCanRenderTagsWithFormatting() {
       let expected = "<head>\n  <title>\n    hello world.\n  </title>\n</head>"
-      let actual = head { title { "hello world." } }.render(startingWithSpacesCount: 0)
+      let actual = head { title { "hello world." } }.render(indent: 2)
 
       XCTAssertEqual(expected, actual)
   }
 
   func testCanRenderTagsWithFormattingWithMultipleSiblings() {
       let expected = "<div>\n  <img/>\n  <img/>\n  <img/>\n  <h1></h1>\n</div>"
-      let actual = div { [ img(), img(), img(), h1() ] }.render(startingWithSpacesCount: 0)
+      let actual = div { [ img(), img(), img(), h1() ] }.render(indent: 2)
 
       XCTAssertEqual(expected, actual)
+  }
+
+  static var allTests : [(String, (HypertextTests) -> () throws -> Void)] {
+    return [
+        ("testCanRenderString", testCanRenderString),
+        ("testCanRenderIntRenderable", testCanRenderIntRenderable),
+        ("testCanRenderDoubleRenderable", testCanRenderDoubleRenderable),
+        ("testCanRenderFloatRenderable", testCanRenderFloatRenderable),
+        ("testCanRenderTag", testCanRenderTag),
+        ("testCanRenderSelfClosingTag", testCanRenderSelfClosingTag),
+        ("testCanRenderTagWithStringChild", testCanRenderTagWithStringChild),
+        ("testCanRenderSelfClosingTagWithoutRenderingChild", testCanRenderSelfClosingTagWithoutRenderingChild),
+        ("testCanRenderTagWithChildTag", testCanRenderTagWithChildTag),
+        ("testCanRenderTagWithMultipleChildTags", testCanRenderTagWithMultipleChildTags),
+        ("testCanRenderTagWithChildWithNestedChild", testCanRenderTagWithChildWithNestedChild),
+        ("testCanRenderTagWithChildWithNestedChildAbusingRender", testCanRenderTagWithChildWithNestedChildAbusingRender),
+        ("testCanRenderTagWithManyNestedChildren", testCanRenderTagWithManyNestedChildren),
+        ("testCanRenderAttributeOnTag", testCanRenderAttributeOnTag),
+        ("testCanRenderAttributeOnNestedTag", testCanRenderAttributeOnNestedTag),
+        ("testCanRenderTagsWithFormatting", testCanRenderTagsWithFormatting),
+        ("testCanRenderTagsWithFormattingWithMultipleSiblings", testCanRenderTagsWithFormattingWithMultipleSiblings)
+    ]
   }
 
 }
