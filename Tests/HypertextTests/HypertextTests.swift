@@ -96,14 +96,14 @@ class HypertextTests: XCTestCase {
 
   func testCanRenderAttributeOnTag() {
       let expected = "<link href=\"./style.css\"/>"
-      let actual = link(attributes: ["href":"./style.css"]).render()
+      let actual = link(["href":"./style.css"]).render()
 
       XCTAssertEqual(expected, actual)
   }
 
   func testCanRenderAttributeOnNestedTag() {
       let expected = "<head><link href=\"./style.css\"/></head>"
-      let actual = head { link(attributes: ["href":"./style.css"]) }.render()
+      let actual = head { link(["href":"./style.css"]) }.render()
     
       XCTAssertEqual(expected, actual)
   }
