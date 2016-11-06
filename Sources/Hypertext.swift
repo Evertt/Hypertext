@@ -49,34 +49,18 @@ extension Array: Renderable {
 }
 
 open class tag: Renderable {
-    public var name: String? = nil
-    public var isSelfClosing: Bool = false
+    open var isSelfClosing: Bool { return false }
+    open var name: String { return String(describing: type(of: self)) }
+
     public var children: Renderable? = nil
     public var attributes: [String: String] = [:]
 
-    public init(setChildren: (() -> Renderable?)) {
-        self.children = setChildren()
-    }
-
-    public convenience init() {
-        self.init { nil }
-    }
-
-    public convenience init(attributes: [String: String]) {
-        self.init { nil }
+    public init(_ attributes: [String: String] = [:], setChildren: (() -> Renderable?) = { nil }) {
         self.attributes = attributes
-    }
-
-    public convenience init(setChildren: (() -> Renderable?), attributes: [String: String]) {
-        self.init(setChildren: setChildren)
-        self.attributes = attributes
+        self.children   = setChildren()
     }
 
     public func render() -> String {
-        guard let name = name else {
-            fatalError("You must give a tag a name in your initializer. Take a look at the readme for an example showing how to create a custom tag.")
-        }
-
         if isSelfClosing {
             return "<\(name)\(renderAttributes())/>"
         } else {
@@ -85,10 +69,6 @@ open class tag: Renderable {
     }
 
     public func render(startingWithSpacesCount: Int) -> String {
-        guard let name = name else {
-            fatalError("You must give a tag a name in your initializer. Take a look at the readme for an example showing how to create a custom tag.")
-        }
-
         let leadingSpaces = String(repeating: " ", count: startingWithSpacesCount)
         if isSelfClosing {
             return "\(leadingSpaces)<\(name)\(renderAttributes())/>"
