@@ -23,7 +23,7 @@ public extension Renderable {
 
 extension CustomStringConvertible {
     public func render(indentingWithSpacesCount count: Int?) -> String {
-        return String(describing: self).indent(withSpacesCount: count ?? 0)
+        return String(describing: self)
     }
 }
 
@@ -43,7 +43,7 @@ extension Array: Renderable {
             return renderedSoFar +
                 (count == nil || renderedSoFar == "" ? "" : "\n") +
                 renderableItem.render(indentingWithSpacesCount: count)
-            }.indent(withSpacesCount: count ?? 0)
+            }
     }
 }
 
