@@ -11,13 +11,19 @@ public protocol Renderable: CustomStringConvertible {
     func render(indentingWithSpacesCount: Int?) -> String
 }
 
-public extension Renderable {
-    var description: String {
+extension Renderable {
+    public var description: String {
         return render()
     }
 
-    func render() -> String {
+    public func render() -> String {
         return render(indentingWithSpacesCount: nil)
+    }
+}
+
+extension CustomStringConvertible {
+    public func render() -> String {
+        return String(describing: self)
     }
 }
 
@@ -43,7 +49,7 @@ extension Array: Renderable {
             return renderedSoFar +
                 (count == nil || renderedSoFar == "" ? "" : "\n") +
                 renderableItem.render(indentingWithSpacesCount: count)
-            }
+        }
     }
 }
 
