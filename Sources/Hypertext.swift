@@ -74,7 +74,7 @@ class AnyInternalRenderable: InternalRenderable {
     }
 
     func render(_ mode: RenderMode, startWithSpaces count: Int) -> String {
-        return renderable.render(mode)
+        return renderable.render(mode).indent(spaces: count)
     }
 
     static func make(from renderable: Renderable?) -> InternalRenderable? {
