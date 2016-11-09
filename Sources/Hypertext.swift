@@ -124,11 +124,11 @@ open class tag: InternalRenderable {
 
     func render(_ mode: RenderMode, startWithSpaces count: Int) -> String {
         if isSelfClosing {
-            return "<\(name)\(renderAttributes())/>"
+            return "<\(name)\(renderAttributes())/>".indent(spaces: count)
         }
 
         guard let children = children else {
-            return "<\(name)\(renderAttributes())></\(name)>"
+            return "<\(name)\(renderAttributes())></\(name)>".indent(spaces: count)
         }
 
         let content = children.render(mode, startWithSpaces: mode.addSpaces(to: count))
