@@ -6,29 +6,27 @@
 //  Copyright © 2016 Sahand Nayebaziz. All rights reserved.
 //
 
+public enum RenderMode {
+    case minified, indented(spaces: Int)
+}
+
 public protocol Renderable: CustomStringConvertible {
     func render() -> String
-    func render(indentingWithSpacesCount: Int?) -> String
+    func render(_ mode: RenderMode) -> String
 }
 
 extension Renderable {
     public var description: String {
-        return render()
+        return render(.minified)
     }
 
     public func render() -> String {
-        return render(indentingWithSpacesCount: nil)
+        return render(.minified)
     }
 }
 
 extension CustomStringConvertible {
-    public func render() -> String {
-        return String(describing: self)
-    }
-}
-
-extension CustomStringConvertible {
-    public func render(indentingWithSpacesCount count: Int?) -> String {
+    public func render(_ mode: RenderMode) -> String {
         return String(describing: self)
     }
 }
@@ -39,7 +37,7 @@ extension Double: Renderable {}
 extension Float: Renderable {}
 
 extension Array: Renderable {
-    public func render(indentingWithSpacesCount count: Int?) -> String {
+    public func render(_ mode: RenderMode) -> String {
         return reduce("") { renderedSoFar, item in
             guard let renderableItem = item as? Renderable else {
                 print("Tried to render an item in an array that does not conform to Renderable.")
@@ -47,8 +45,8 @@ extension Array: Renderable {
             }
 
             return renderedSoFar +
-                (count == nil || renderedSoFar == "" ? "" : "\n") +
-                renderableItem.render(indentingWithSpacesCount: count)
+                (renderedSoFar == "" ? "" : "\n") +
+                renderableItem.render(mode)
         }
     }
 }
@@ -65,24 +63,22 @@ open class tag: Renderable {
         self.children   = setChildren()
     }
 
-    public func render(indentingWithSpacesCount count: Int?) -> String {
+    public func render(_ mode: RenderMode) -> String {
         if isSelfClosing {
             return "<\(name)\(renderAttributes())/>"
         }
 
-        guard let children = children else {
+        guard let content = children?.render(mode) else {
             return "<\(name)\(renderAttributes())></\(name)>"
         }
 
-        var content = children
-            .render(indentingWithSpacesCount: count)
-            .indent(withSpacesCount: count ?? 0)
-
-        if (count != nil) {
-            content = "\n\(content)\n"
+        switch mode {
+        case .minified:
+            return "<\(name)\(renderAttributes())>\(content)</\(name)>"
+        case .indented(let spacesCount):
+            let indentedContent = content.indent(spaces: spacesCount)
+            return "<\(name)\(renderAttributes())>\n\(indentedContent)\n</\(name)>"
         }
-
-        return "<\(name)\(renderAttributes())>\(content)</\(name)>"
     }
 
     private func renderAttributes() -> String {
