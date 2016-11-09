@@ -8,11 +8,35 @@
 
 public enum RenderMode {
     case minified, indented(spaces: Int)
+
+    func addSpaces(to initialCount: Int) -> Int {
+        switch self {
+        case .minified:
+            return initialCount
+        case .indented(let spaces):
+            return initialCount + spaces
+        }
+    }
+
+    static func ==(left: RenderMode, right: RenderMode) -> Bool {
+        switch (left, right) {
+        case (.minified, .minified):
+            return true
+        case let (.indented(leftCount), .indented(rightCount)):
+            return leftCount == rightCount
+        default:
+            return false
+        }
+    }
 }
 
 public protocol Renderable: CustomStringConvertible {
     func render() -> String
     func render(_ mode: RenderMode) -> String
+}
+
+protocol InternalRenderable: Renderable {
+    func render(_ mode: RenderMode, startWithSpaces: Int) -> String
 }
 
 extension Renderable {
@@ -26,58 +50,97 @@ extension Renderable {
 }
 
 extension CustomStringConvertible {
-    public func render(_ mode: RenderMode) -> String {
-        return String(describing: self)
+    func render(_ mode: RenderMode, startWithSpaces count: Int) -> String {
+        switch mode {
+        case .minified:
+            return String(describing: self)
+        case .indented:
+            return String(describing: self).indent(spaces: count)
+        }
     }
 }
 
-extension String: Renderable {}
-extension Int: Renderable {}
-extension Double: Renderable {}
-extension Float: Renderable {}
-
-extension Array: Renderable {
+extension InternalRenderable {
     public func render(_ mode: RenderMode) -> String {
+        return render(mode, startWithSpaces: 0)
+    }
+}
+
+class AnyInternalRenderable: InternalRenderable {
+    let renderable: Renderable
+
+    init(renderable: Renderable) {
+        self.renderable = renderable
+    }
+
+    func render(_ mode: RenderMode, startWithSpaces count: Int) -> String {
+        return renderable.render(mode)
+    }
+
+    static func make(from renderable: Renderable?) -> InternalRenderable? {
+        guard let renderable = renderable else {
+            return nil
+        }
+
+        if let internalRenderable = renderable as? InternalRenderable {
+            return internalRenderable
+        }
+
+        return AnyInternalRenderable(renderable: renderable)
+    }
+}
+
+extension String : InternalRenderable {}
+extension Int    : InternalRenderable {}
+extension Double : InternalRenderable {}
+extension Float  : InternalRenderable {}
+
+extension Array: InternalRenderable {
+    func render(_ mode: RenderMode, startWithSpaces count: Int) -> String {
         return reduce("") { renderedSoFar, item in
-            guard let renderableItem = item as? Renderable else {
+            guard let renderableItem = AnyInternalRenderable.make(from: item as? Renderable) else {
                 print("Tried to render an item in an array that does not conform to Renderable.")
                 return renderedSoFar
             }
 
             return renderedSoFar +
-                (renderedSoFar == "" ? "" : "\n") +
-                renderableItem.render(mode)
+                (mode == .minified || renderedSoFar == "" ? "" : "\n") +
+                renderableItem.render(mode, startWithSpaces: count)
         }
     }
 }
 
-open class tag: Renderable {
+open class tag: InternalRenderable {
     open var isSelfClosing: Bool { return false }
     open var name: String { return String(describing: type(of: self)) }
 
-    public var children: Renderable? = nil
+    var children: InternalRenderable? = nil
     public var attributes: [String: String] = [:]
 
     public init(_ attributes: [String: String] = [:], setChildren: (() -> Renderable?) = { nil }) {
         self.attributes = attributes
-        self.children   = setChildren()
+        self.children   = AnyInternalRenderable.make(from: setChildren())
     }
 
-    public func render(_ mode: RenderMode) -> String {
+    func render(_ mode: RenderMode, startWithSpaces count: Int) -> String {
         if isSelfClosing {
             return "<\(name)\(renderAttributes())/>"
         }
 
-        guard let content = children?.render(mode) else {
+        guard let children = children else {
             return "<\(name)\(renderAttributes())></\(name)>"
         }
+
+        let content = children.render(mode, startWithSpaces: mode.addSpaces(to: count))
 
         switch mode {
         case .minified:
             return "<\(name)\(renderAttributes())>\(content)</\(name)>"
-        case .indented(let spacesCount):
-            let indentedContent = content.indent(spaces: spacesCount)
-            return "<\(name)\(renderAttributes())>\n\(indentedContent)\n</\(name)>"
+        case .indented:
+            let open = "<\(name)\(renderAttributes())>".indent(spaces: count)
+            let close = "</\(name)>".indent(spaces: count)
+
+            return "\(open)\n\(content)\n\(close)"
         }
     }
 

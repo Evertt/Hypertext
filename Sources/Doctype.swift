@@ -1,4 +1,4 @@
-public class doctype: Renderable {
+public class doctype: InternalRenderable {
     public enum Doctype: String {
         case html5 = "<!DOCTYPE html>"
         case html4Strict = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">"
